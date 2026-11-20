@@ -1,0 +1,75 @@
+name: Buddy test build
+
+# A test build of this fork's buddy-companion-fixes branch for on-device testing with the
+# Android companion. Unsigned (ad-hoc), Development configuration, Apple Silicon only.
+# Not for upstream: this workflow lives only on the test branch.
+on:
+  workflow_dispatch:
+  push:
+    branches: [buddy-companion-fixes]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: buddy-test-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: macos-26
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Pick Xcode
+        id: xcode
+        run: |
+          wanted="$(cat last-xcode-version)"
+          echo "Wanted:"; echo "$wanted"
+          match=""
+          for app in /Applications/Xcode*.app; do
+            v="$("$app/Contents/Developer/usr/bin/xcodebuild" -version 2>/dev/null || true)"
+            echo "$app: $(echo "$v" | tr '\n' ' ')"
+            if [ "$v" = "$wanted" ]; then match="$app"; fi
+          done
+          if [ -n "$match" ]; then
+            sudo xcode-select -s "$match/Contents/Developer"
+            echo "rebuild_deps=false" >> "$GITHUB_OUTPUT"
+          else
+            newest="$(ls -d /Applications/Xcode_27*.app 2>/dev/null | sort -V | tail -n 1)"
+            [ -n "$newest" ] || newest="$(ls -d /Applications/Xcode*.app | sort -V | tail -n 1)"
+            echo "No exact match; using $newest and rebuilding the prebuilt dependencies"
+            sudo xcode-select -s "$newest/Contents/Developer"
+            echo "rebuild_deps=true" >> "$GITHUB_OUTPUT"
+          fi
+          xcodebuild -version
+
+      - name: Rebuild prebuilt dependencies for this Xcode
+        if: steps.xcode.outputs.rebuild_deps == 'true'
+        run: |
+          brew install cmake automake autoconf libtool pkg-config || true
+          make deps
+          xcodebuild -version > last-xcode-version
+
+      - name: Build (Development, unsigned)
+        run: make Development
+
+      - name: Ad-hoc sign and zip
+        run: |
+          app="$(find Build/Development -maxdepth 1 -name 'iTerm2.app' -print -quit)"
+          [ -n "$app" ] || app="$(find . -path '*/Build/Development/iTerm2.app' -print -quit)"
+          echo "App: $app"
+          codesign --force --deep --sign - "$app"
+          codesign --verify --deep --strict "$app" || true
+          ditto -c -k --keepParent "$app" iTerm2-buddy-test.zip
+          shasum -a 256 iTerm2-buddy-test.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: iTerm2-buddy-test-${{ github.sha }}
+          path: iTerm2-buddy-test.zip
+          retention-days: 14
