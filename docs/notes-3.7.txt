@@ -39,16 +39,14 @@ Bug Fixes:
   All Settings and Data failed if any profile
   had a hotkey of Control-Space recorded, even a
   disabled one. Fixed.
-- In iTerm2 Buddy, a session in a background
-  tab, a minimized window, or a hidden hotkey
-  window now updates smoothly instead of about
-  once a second.
 - In iTerm2 Buddy, typing /, *, +, or = into a
   program that turns on enhanced key reporting,
   such as Claude Code, sent the wrong key. Fixed.
 - Scrolling a web browser session from iTerm2
   Buddy did nothing unless its window was at the
-  corner of the screen. Fixed.
-- iTerm2 Buddy no longer shows a session faded
-  when it is an inactive split pane or in a
-  window in the background on the Mac.
+  bottom-left corner of the main display. Fixed.
+- Opening a session in iTerm2 Buddy now selects
+  its tab and split pane on the Mac, without
+  bringing the window to the front. This keeps
+  the session updating smoothly on the phone
+  and keeps it from looking faded.

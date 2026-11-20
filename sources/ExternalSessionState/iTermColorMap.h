@@ -173,11 +173,5 @@ extern const int kColorMap24bitBase;
 - (void)setColor:(NSColor *)theColor forKey:(iTermColorMapKey)theKey;
 - (iTermColorMap *)copy;
 
-// Returns a copy of colorMap with no dimming and no delegate, so changing it never
-// notifies the session. Used to render a session the way it looks when active
-// (e.g., for the companion app) without touching what is drawn on the Mac.
-// Returns nil if colorMap cannot be copied.
-+ (iTermColorMap *)undimmedCopyOf:(id<iTermColorMapReading>)colorMap NS_SWIFT_NAME(undimmedCopy(of:));
-
 @end
 

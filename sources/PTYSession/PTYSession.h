@@ -768,9 +768,6 @@ backgroundColor:(nullable NSColor *)backgroundColor;
 // May be nil before the colormap has been populated (e.g., during early
 // init, before -setPreferencesFromAddressBookEntry: runs).
 @property(nonatomic, readonly, nullable) NSColor *processedBackgroundColor;
-// Like processedBackgroundColor but without the dimming of an inactive split
-// pane or background window, matching renders made with undimmed:YES.
-@property(nonatomic, readonly, nullable) NSColor *undimmedProcessedBackgroundColor;
 @property(nonatomic, readonly, nullable) NSImage *tabGraphic;
 @property(nonatomic, readonly, nullable) iTermStatusBarViewController *statusBarViewController;
 @property(nonatomic, readonly) BOOL shouldShowTabGraphic;
@@ -1189,15 +1186,6 @@ webViewConfiguration:(nullable WKWebViewConfiguration *)webViewConfiguration
 // or cells), and full-screen windows.
 - (BOOL)companionSessionCanResizeWindow;
 
-// The companion (iTerm2 Buddy) host calls these when it starts and stops
-// streaming this session's screen as video. While at least one stream is live,
-// the session refreshes at the cadence of a visible session even when its tab
-// is in the background or its window is miniaturized or ordered out (e.g., a
-// hidden hotkey window); otherwise the phone would get one frame per second.
-// Calls must be balanced. Main thread only.
-- (void)companionStreamDidStart;
-- (void)companionStreamDidEnd;
-
 // Returns the number of pixels over or under the an ideal size.
 // Will never exceed +/- cell size/2.
 // If vertically is true, proposedSize is a height, else it's a width.
@@ -1320,6 +1308,13 @@ webViewConfiguration:(nullable WKWebViewConfiguration *)webViewConfiguration
 // if needed, without ordering the window front, activating the app, or
 // changing the selected tab. See the implementation for details.
 - (void)revealAsPeerWithoutActivatingWindow;
+// Make this the active pane of its tab and select that tab, as -reveal does, but
+// without ordering the window front, making it key, or activating the app. A
+// maximized pane is swapped for this one. Does nothing for a buried session or
+// one that is not in a tab (e.g., a workgroup peer not shown in its pane). Used
+// when the companion app starts streaming a session, so the session the phone
+// shows is the one selected on the Mac.
+- (void)selectWithoutActivatingWindow;
 - (void)revealSelection:(iTermSelection *)selection;
 - (void)highlightMarkOrNote:(nullable id<IntervalTreeImmutableObject>)obj;
 

@@ -47,9 +47,6 @@ final class CompanionHostBridge {
         /// Browser streams have no text grid, so selection tracking is skipped.
         let isBrowser: Bool
         let guid: String
-        /// The streamed session, told when the stream ends so it can drop back to
-        /// its normal update cadence (see PTYSession.companionStreamDidStart).
-        weak var session: PTYSession?
         let timer: Timer
         var lastChange: TimeInterval
         /// The page editing state last pushed to the phone (browser streams only).
@@ -73,14 +70,12 @@ final class CompanionHostBridge {
              source: CompanionLiveFrameSource,
              isBrowser: Bool,
              guid: String,
-             session: PTYSession,
              timer: Timer,
              lastChange: TimeInterval) {
             self.streamer = streamer
             self.source = source
             self.isBrowser = isBrowser
             self.guid = guid
-            self.session = session
             self.timer = timer
             self.lastChange = lastChange
         }
@@ -1217,6 +1212,11 @@ final class CompanionHostBridge {
         if let existing = streamIDForGuid[guid] {
             endStream(existing, reason: .superseded)
         }
+        // Select the session on the Mac (its tab and pane) without raising its
+        // window or activating the app, so the session the phone shows is the
+        // one in front in its window: it refreshes at full speed and is not
+        // dimmed as an inactive split pane.
+        session.selectWithoutActivatingWindow()
 
         let streamID = nextStreamID
         nextStreamID &+= 1
@@ -1286,14 +1286,9 @@ final class CompanionHostBridge {
                                           source: source,
                                           isBrowser: isBrowser,
                                           guid: guid,
-                                          session: session,
                                           timer: timer,
                                           lastChange: source.contentLastChangedAt)
         streamIDForGuid[guid] = streamID
-        // Background-tab, miniaturized, and hidden-hotkey sessions otherwise
-        // refresh once a second, which caps the stream at about 1 fps because
-        // the frame source only sees content the session has synced.
-        session.companionStreamDidStart()
         RLog("stream \(streamID) START guid=\(guid) fps=\(frameRate) browser=\(isBrowser)")
         send(.streamStarted(CompanionStreamStarted(streamID: streamID, codec: .hevc)),
              requestID: requestID)
@@ -1354,7 +1349,6 @@ final class CompanionHostBridge {
         RLog("stream \(streamID) END reason=\(reason)")
         context.timer.invalidate()
         context.streamer.stop()
-        context.session?.companionStreamDidEnd()
         if streamIDForGuid[context.guid] == streamID {
             streamIDForGuid[context.guid] = nil
         }
@@ -2094,15 +2088,11 @@ final class CompanionHostBridge {
         }
         // Renderer skips the background fill when bgColor is nil, leaving
         // margins transparent; fall back to black so tiles look continuous.
-        // Undimmed, to match the live stream (see CompanionTerminalFrameSource).
-        let backgroundColor = session.undimmedProcessedBackgroundColor ?? .black
+        let backgroundColor = session.processedBackgroundColor ?? .black
         guard let image = textview.renderImage(withLines: NSRange(location: first, length: count),
                                                includeMargins: false,
                                                backgroundColor: backgroundColor,
-                                               showCursor: false,
-                                               includeSelection: false,
-                                               cursorFocused: false,
-                                               undimmed: true) else {
+                                               showCursor: false) else {
             RLog("Companion bridge: render failed for \(guid): wasDetached=\(wasDetached) lines=\(totalLines) frame=\(NSStringFromRect(textview.frame))")
             send(.error(CompanionError(code: .internalError,
                                        message: "Rendering the session content failed.")),
@@ -2160,17 +2150,14 @@ final class CompanionHostBridge {
         let wasDetached = textview.dataSource == nil
         if wasDetached { textview.dataSource = session.screen }
         defer { if wasDetached { textview.dataSource = nil } }
-        // Undimmed, to match the live stream (see CompanionTerminalFrameSource).
-        let backgroundColor = session.undimmedProcessedBackgroundColor ?? .black
+        let backgroundColor = session.processedBackgroundColor ?? .black
         // Render with the current selection so scrollback shows the same highlight
         // as the live band; the phone refetches affected tiles when it changes.
         guard let image = textview.renderImage(withLines: NSRange(location: relativeFirst, length: covered.count),
                                                includeMargins: false,
                                                backgroundColor: backgroundColor,
                                                showCursor: false,
-                                               includeSelection: true,
-                                               cursorFocused: false,
-                                               undimmed: true) else {
+                                               includeSelection: true) else {
             RLog("Companion historyTile FAIL render covered=[\(covered.absLine),+\(covered.count)) rel=\(relativeFirst) total=\(total) detached=\(wasDetached) frame=\(NSStringFromRect(textview.frame))")
             send(.error(CompanionError(code: .internalError, message: "Rendering the session content failed.")),
                  requestID: requestID)

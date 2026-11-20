@@ -283,7 +283,8 @@ enum CompanionBrowserInput {
     /// location in screen coordinates (origin at the bottom left of the primary
     /// screen). WebKit still reads `locationInWindow` as a point in the web view's
     /// window to find what to scroll, so a screen point lands offset by the
-    /// window's origin and misses unless the window is at the screen's origin.
+    /// window's origin and misses unless the window is at the bottom-left corner
+    /// of the main display.
     /// Passing the window point itself, flipped the way AppKit flips CG
     /// coordinates, makes `locationInWindow` come out as the window point. The
     /// same holds for a web view with no window, where the window point is in the

@@ -13,7 +13,6 @@
 #import "iTermActionsMenuController.h"
 #import "iTermAdvancedSettingsModel.h"
 #import "iTermBackgroundCommandRunner.h"
-#import "iTermColorMap.h"
 #import "iTermCommandRunner.h"
 #import "iTermController.h"
 #import "iTermImageInfo.h"
@@ -78,8 +77,7 @@ iTermCommandInfoViewControllerDelegate>
                                     backgroundColor:(NSColor * _Nullable)backgroundColor
                                          showCursor:(BOOL)showCursor
                                    includeSelection:(BOOL)includeSelection
-                                      cursorFocused:(BOOL)cursorFocused
-                                           undimmed:(BOOL)undimmed;
+                                      cursorFocused:(BOOL)cursorFocused;
 @end
 
 #pragma mark - Batched Render Token
@@ -2418,8 +2416,7 @@ toggleAnimationOfImage:(id<iTermImageInfoReading>)imageInfo {
                               backgroundColor:nil
                                    showCursor:NO
                              includeSelection:NO
-                                cursorFocused:NO
-                                     undimmed:NO];
+                                cursorFocused:NO];
 }
 
 - (NSImage *)renderOffscreenImageForLines:(NSRange)lineRange
@@ -2428,8 +2425,7 @@ toggleAnimationOfImage:(id<iTermImageInfoReading>)imageInfo {
                           backgroundColor:(NSColor *)backgroundColor
                                showCursor:(BOOL)showCursor
                          includeSelection:(BOOL)includeSelection
-                            cursorFocused:(BOOL)cursorFocused
-                                 undimmed:(BOOL)undimmed {
+                            cursorFocused:(BOOL)cursorFocused {
     id<iTermTextDataSource> dataSource = self.dataSource;
     if (!dataSource) {
         return nil;
@@ -2509,16 +2505,6 @@ toggleAnimationOfImage:(id<iTermImageInfoReading>)imageInfo {
     // not depend on window state.
     helper.isRetina = (scale > 1.0);
     helper.antiAliasedShift = (scale > 1.0) ? 0.5 : 0;
-
-    if (undimmed && helper.colorMap.dimmingAmount > 0) {
-        // All dimming goes through the color map, so an undimmed copy given only
-        // to this offscreen helper renders undimmed without changing the colors
-        // the view draws with (no flicker on the Mac).
-        iTermColorMap *undimmedColorMap = [iTermColorMap undimmedCopyOf:helper.colorMap];
-        if (undimmedColorMap) {
-            helper.colorMap = undimmedColorMap;
-        }
-    }
 
     if (showCursor) {
         helper.isCursorVisible = YES;
@@ -2606,22 +2592,6 @@ toggleAnimationOfImage:(id<iTermImageInfoReading>)imageInfo {
                        showCursor:(BOOL)showCursor
                  includeSelection:(BOOL)includeSelection
                     cursorFocused:(BOOL)cursorFocused {
-    return [self renderImageWithLines:lineRange
-                       includeMargins:includeMargins
-                      backgroundColor:backgroundColor
-                           showCursor:showCursor
-                     includeSelection:includeSelection
-                        cursorFocused:cursorFocused
-                             undimmed:NO];
-}
-
-- (NSImage *)renderImageWithLines:(NSRange)lineRange
-                   includeMargins:(BOOL)includeMargins
-                  backgroundColor:(NSColor *)backgroundColor
-                       showCursor:(BOOL)showCursor
-                 includeSelection:(BOOL)includeSelection
-                    cursorFocused:(BOOL)cursorFocused
-                         undimmed:(BOOL)undimmed {
     // Streamed/companion frame: content width only (no accessory gutter).
     return [self renderOffscreenImageForLines:lineRange
                            excludeRightGutter:YES
@@ -2629,8 +2599,7 @@ toggleAnimationOfImage:(id<iTermImageInfoReading>)imageInfo {
                               backgroundColor:backgroundColor
                                    showCursor:showCursor
                              includeSelection:includeSelection
-                                cursorFocused:cursorFocused
-                                     undimmed:undimmed];
+                                cursorFocused:cursorFocused];
 }
 
 #pragma mark - Batched Line Rendering
