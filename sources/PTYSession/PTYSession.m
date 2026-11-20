@@ -18042,6 +18042,24 @@ typedef NS_ENUM(NSUInteger, PTYSessionTmuxReport) {
     }
 }
 
+- (void)selectWithoutActivatingWindow {
+    if ([[[iTermBuriedSessions sharedInstance] buriedSessions] containsObject:self]) {
+        DLog(@"Not selecting buried session %@", self);
+        return;
+    }
+    if (!_delegate) {
+        DLog(@"Not selecting %@: it is not in a tab", self);
+        return;
+    }
+    RLog(@"Select session %@ without activating its window", self);
+    // Same order as -reveal: set the active session before selecting the tab so
+    // the tab switch sees self as active. Neither call orders the window front,
+    // makes it key, or activates the app; within the window, the session's view
+    // becomes first responder, as when the user selects a pane.
+    [_delegate setActiveSessionPreservingMaximization:self];
+    [_delegate sessionSelectContainingTab];
+}
+
 - (void)reveal {
     RLog(@"Reveal session %@", self);
     if ([[[iTermBuriedSessions sharedInstance] buriedSessions] containsObject:self]) {

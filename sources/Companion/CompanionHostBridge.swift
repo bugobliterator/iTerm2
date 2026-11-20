@@ -1212,6 +1212,11 @@ final class CompanionHostBridge {
         if let existing = streamIDForGuid[guid] {
             endStream(existing, reason: .superseded)
         }
+        // Select the session on the Mac (its tab and pane) without raising its
+        // window or activating the app, so the session the phone shows is the
+        // one in front in its window: it refreshes at full speed and is not
+        // dimmed as an inactive split pane.
+        session.selectWithoutActivatingWindow()
 
         let streamID = nextStreamID
         nextStreamID &+= 1

@@ -39,3 +39,8 @@ Bug Fixes:
   All Settings and Data failed if any profile
   had a hotkey of Control-Space recorded, even a
   disabled one. Fixed.
+- Opening a session in iTerm2 Buddy now selects
+  its tab and split pane on the Mac, without
+  bringing the window to the front. This keeps
+  the session updating smoothly on the phone
+  and keeps it from looking faded.
