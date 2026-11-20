@@ -668,6 +668,10 @@ typedef NS_ENUM(NSUInteger, PTYSessionTurdType) {
     // during live resize (unlike the default runloops).
     BOOL _inLiveResize;
 
+    // Number of live companion video streams of this session. See
+    // -companionStreamDidStart.
+    NSInteger _companionStreamCount;
+
     id<VT100RemoteHostReading> _currentHost;
 
     NSMutableDictionary<id, ITMNotificationRequest *> *_keystrokeSubscriptions;
@@ -17281,6 +17285,22 @@ typedef NS_ENUM(NSUInteger, PTYSessionTmuxReport) {
     [_delegate sessionInitiatedResize:self width:columns height:rows];
 }
 
+- (void)companionStreamDidStart {
+    _companionStreamCount += 1;
+    DLog(@"companionStreamDidStart count=%@ %@", @(_companionStreamCount), self);
+    [_cadenceController changeCadenceIfNeeded];
+}
+
+- (void)companionStreamDidEnd {
+    if (_companionStreamCount <= 0) {
+        DLog(@"Unbalanced companionStreamDidEnd for %@", self);
+        return;
+    }
+    _companionStreamCount -= 1;
+    DLog(@"companionStreamDidEnd count=%@ %@", @(_companionStreamCount), self);
+    [_cadenceController changeCadenceIfNeeded];
+}
+
 - (BOOL)companionSessionCanResizeWindow {
     id<WindowControllerInterface> window = [_delegate parentWindow];
     if (!window) {
@@ -24208,9 +24228,12 @@ static const int iTermNestedFramerRecoveryMaximumExtensions = 4;
     // isVisible distinguishes windows that were ordered out (e.g., a hidden hotkey window) from
     // on-screen windows. Without it, a hidden hotkey window with a non-idle session redraws at
     // the full active cadence forever. See the offscreen predicate in -shouldAlert for precedent.
-    state.visible = ([_delegate sessionBelongsToVisibleTab] &&
-                     self.view.window.isVisible &&
-                     !self.view.window.isMiniaturized);
+    // A session streamed to the companion app is on screen, just not on this Mac's
+    // screen, so it gets the visible cadence wherever its tab and window are.
+    state.visible = (_companionStreamCount > 0 ||
+                     ([_delegate sessionBelongsToVisibleTab] &&
+                      self.view.window.isVisible &&
+                      !self.view.window.isMiniaturized));
 
     if (self.useMetal) {
         if ([iTermPreferences maximizeThroughput] &&

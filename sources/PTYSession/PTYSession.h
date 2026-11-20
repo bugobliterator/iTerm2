@@ -1186,6 +1186,15 @@ webViewConfiguration:(nullable WKWebViewConfiguration *)webViewConfiguration
 // or cells), and full-screen windows.
 - (BOOL)companionSessionCanResizeWindow;
 
+// The companion (iTerm2 Buddy) host calls these when it starts and stops
+// streaming this session's screen as video. While at least one stream is live,
+// the session refreshes at the cadence of a visible session even when its tab
+// is in the background or its window is miniaturized or ordered out (e.g., a
+// hidden hotkey window); otherwise the phone would get one frame per second.
+// Calls must be balanced. Main thread only.
+- (void)companionStreamDidStart;
+- (void)companionStreamDidEnd;
+
 // Returns the number of pixels over or under the an ideal size.
 // Will never exceed +/- cell size/2.
 // If vertically is true, proposedSize is a height, else it's a width.

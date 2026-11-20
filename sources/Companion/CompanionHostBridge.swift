@@ -47,6 +47,9 @@ final class CompanionHostBridge {
         /// Browser streams have no text grid, so selection tracking is skipped.
         let isBrowser: Bool
         let guid: String
+        /// The streamed session, told when the stream ends so it can drop back to
+        /// its normal update cadence (see PTYSession.companionStreamDidStart).
+        weak var session: PTYSession?
         let timer: Timer
         var lastChange: TimeInterval
         /// The page editing state last pushed to the phone (browser streams only).
@@ -70,12 +73,14 @@ final class CompanionHostBridge {
              source: CompanionLiveFrameSource,
              isBrowser: Bool,
              guid: String,
+             session: PTYSession,
              timer: Timer,
              lastChange: TimeInterval) {
             self.streamer = streamer
             self.source = source
             self.isBrowser = isBrowser
             self.guid = guid
+            self.session = session
             self.timer = timer
             self.lastChange = lastChange
         }
@@ -1281,9 +1286,14 @@ final class CompanionHostBridge {
                                           source: source,
                                           isBrowser: isBrowser,
                                           guid: guid,
+                                          session: session,
                                           timer: timer,
                                           lastChange: source.contentLastChangedAt)
         streamIDForGuid[guid] = streamID
+        // Background-tab, miniaturized, and hidden-hotkey sessions otherwise
+        // refresh once a second, which caps the stream at about 1 fps because
+        // the frame source only sees content the session has synced.
+        session.companionStreamDidStart()
         RLog("stream \(streamID) START guid=\(guid) fps=\(frameRate) browser=\(isBrowser)")
         send(.streamStarted(CompanionStreamStarted(streamID: streamID, codec: .hevc)),
              requestID: requestID)
@@ -1344,6 +1354,7 @@ final class CompanionHostBridge {
         RLog("stream \(streamID) END reason=\(reason)")
         context.timer.invalidate()
         context.streamer.stop()
+        context.session?.companionStreamDidEnd()
         if streamIDForGuid[context.guid] == streamID {
             streamIDForGuid[context.guid] = nil
         }
