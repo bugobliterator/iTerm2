@@ -676,6 +676,15 @@ const int kColorMapAnsiBrightModifier = 8;
     return [self copyWithZone:nil];
 }
 
++ (iTermColorMap *)undimmedCopyOf:(id<iTermColorMapReading>)colorMap {
+    iTermColorMap *copy = [colorMap copy];
+    // Detach first: the copy shares the original's delegate, and setting the
+    // dimming amount would otherwise report a change for the real session.
+    copy.delegate = nil;
+    copy.dimmingAmount = 0;
+    return copy;
+}
+
 - (id)copyWithZone:(NSZone *)zone {
     iTermColorMap *other = [[iTermColorMap alloc] init];
     if (!other) {

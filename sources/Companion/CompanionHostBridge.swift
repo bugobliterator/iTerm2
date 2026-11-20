@@ -2094,11 +2094,15 @@ final class CompanionHostBridge {
         }
         // Renderer skips the background fill when bgColor is nil, leaving
         // margins transparent; fall back to black so tiles look continuous.
-        let backgroundColor = session.processedBackgroundColor ?? .black
+        // Undimmed, to match the live stream (see CompanionTerminalFrameSource).
+        let backgroundColor = session.undimmedProcessedBackgroundColor ?? .black
         guard let image = textview.renderImage(withLines: NSRange(location: first, length: count),
                                                includeMargins: false,
                                                backgroundColor: backgroundColor,
-                                               showCursor: false) else {
+                                               showCursor: false,
+                                               includeSelection: false,
+                                               cursorFocused: false,
+                                               undimmed: true) else {
             RLog("Companion bridge: render failed for \(guid): wasDetached=\(wasDetached) lines=\(totalLines) frame=\(NSStringFromRect(textview.frame))")
             send(.error(CompanionError(code: .internalError,
                                        message: "Rendering the session content failed.")),
@@ -2156,14 +2160,17 @@ final class CompanionHostBridge {
         let wasDetached = textview.dataSource == nil
         if wasDetached { textview.dataSource = session.screen }
         defer { if wasDetached { textview.dataSource = nil } }
-        let backgroundColor = session.processedBackgroundColor ?? .black
+        // Undimmed, to match the live stream (see CompanionTerminalFrameSource).
+        let backgroundColor = session.undimmedProcessedBackgroundColor ?? .black
         // Render with the current selection so scrollback shows the same highlight
         // as the live band; the phone refetches affected tiles when it changes.
         guard let image = textview.renderImage(withLines: NSRange(location: relativeFirst, length: covered.count),
                                                includeMargins: false,
                                                backgroundColor: backgroundColor,
                                                showCursor: false,
-                                               includeSelection: true) else {
+                                               includeSelection: true,
+                                               cursorFocused: false,
+                                               undimmed: true) else {
             RLog("Companion historyTile FAIL render covered=[\(covered.absLine),+\(covered.count)) rel=\(relativeFirst) total=\(total) detached=\(wasDetached) frame=\(NSStringFromRect(textview.frame))")
             send(.error(CompanionError(code: .internalError, message: "Rendering the session content failed.")),
                  requestID: requestID)

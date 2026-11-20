@@ -768,6 +768,9 @@ backgroundColor:(nullable NSColor *)backgroundColor;
 // May be nil before the colormap has been populated (e.g., during early
 // init, before -setPreferencesFromAddressBookEntry: runs).
 @property(nonatomic, readonly, nullable) NSColor *processedBackgroundColor;
+// Like processedBackgroundColor but without the dimming of an inactive split
+// pane or background window, matching renders made with undimmed:YES.
+@property(nonatomic, readonly, nullable) NSColor *undimmedProcessedBackgroundColor;
 @property(nonatomic, readonly, nullable) NSImage *tabGraphic;
 @property(nonatomic, readonly, nullable) iTermStatusBarViewController *statusBarViewController;
 @property(nonatomic, readonly) BOOL shouldShowTabGraphic;

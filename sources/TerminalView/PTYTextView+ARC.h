@@ -243,6 +243,18 @@ typedef NS_ENUM(NSUInteger, iTermContentNavigationAction) {
                          includeSelection:(BOOL)includeSelection
                             cursorFocused:(BOOL)cursorFocused;
 
+// As above, but undimmed:YES renders with the session's colors as they are when
+// it is active, ignoring the dimming of inactive split panes and background
+// windows. Companion frames use this: the phone shows one session at a time, so
+// dimming there just makes it look faded. The view's own drawing is unaffected.
+- (NSImage * _Nullable)renderImageWithLines:(NSRange)lineRange
+                           includeMargins:(BOOL)includeMargins
+                          backgroundColor:(NSColor * _Nullable)backgroundColor
+                               showCursor:(BOOL)showCursor
+                         includeSelection:(BOOL)includeSelection
+                            cursorFocused:(BOOL)cursorFocused
+                                 undimmed:(BOOL)undimmed;
+
 // Renders lines in batches to avoid blocking the main thread.
 // Each batch is rendered, then control returns to the run loop before the next batch.
 // Progress callback is called after each batch with (completed lines, total lines).

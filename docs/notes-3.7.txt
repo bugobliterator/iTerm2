@@ -49,3 +49,6 @@ Bug Fixes:
 - Scrolling a web browser session from iTerm2
   Buddy did nothing unless its window was at the
   corner of the screen. Fixed.
+- iTerm2 Buddy no longer shows a session faded
+  when it is an inactive split pane or in a
+  window in the background on the Mac.
