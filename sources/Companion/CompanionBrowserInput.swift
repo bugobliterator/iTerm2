@@ -264,16 +264,34 @@ enum CompanionBrowserInput {
                                     wheel3: 0) else {
             return
         }
-        // A scroll event carries a global location (origin at the top left of the
-        // main screen); WebKit converts it back to find what to scroll.
         let inWindow = windowLocation(webView, point: point)
-        var global = webView.window?.convertPoint(toScreen: inWindow) ?? inWindow
-        global.y = (NSScreen.screens.first?.frame.height ?? 0) - global.y
-        cgEvent.location = global
+        cgEvent.location = scrollEventLocation(windowPoint: inWindow,
+                                               primaryScreenHeight: NSScreen.screens.first?.frame.height ?? 0)
         guard let wheelEvent = NSEvent(cgEvent: cgEvent) else {
             return
         }
+        DLog("scroll at \(point) inWindow=\(inWindow) locationInWindow=\(wheelEvent.locationInWindow) eventWindow=\(String(describing: wheelEvent.window))")
         webView.scrollWheel(with: wheelEvent)
+    }
+
+    /// The global location (origin at the top left of the primary screen) to give a
+    /// CGEvent so that the NSEvent made from it has `locationInWindow` equal to
+    /// `windowPoint`.
+    ///
+    /// Why not the window point converted to the screen: NSEvent(cgEvent:) makes an
+    /// event with no window, and for such an event `locationInWindow` is the
+    /// location in screen coordinates (origin at the bottom left of the primary
+    /// screen). WebKit still reads `locationInWindow` as a point in the web view's
+    /// window to find what to scroll, so a screen point lands offset by the
+    /// window's origin and misses unless the window is at the screen's origin.
+    /// Passing the window point itself, flipped the way AppKit flips CG
+    /// coordinates, makes `locationInWindow` come out as the window point. The
+    /// same holds for a web view with no window, where the window point is in the
+    /// web view's own coordinates. NSEvent.mouseEvent, which `click` uses, takes a
+    /// window number and location directly, but there is no such constructor for
+    /// scroll-wheel events.
+    static func scrollEventLocation(windowPoint: NSPoint, primaryScreenHeight: CGFloat) -> CGPoint {
+        return CGPoint(x: windowPoint.x, y: primaryScreenHeight - windowPoint.y)
     }
 
     /// `point` (view points, origin at the top left) in window coordinates.

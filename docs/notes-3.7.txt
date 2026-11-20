@@ -46,3 +46,6 @@ Bug Fixes:
 - In iTerm2 Buddy, typing /, *, +, or = into a
   program that turns on enhanced key reporting,
   such as Claude Code, sent the wrong key. Fixed.
+- Scrolling a web browser session from iTerm2
+  Buddy did nothing unless its window was at the
+  corner of the screen. Fixed.

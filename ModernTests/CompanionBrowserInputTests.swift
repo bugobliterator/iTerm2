@@ -255,6 +255,52 @@ final class CompanionBrowserInputTests: XCTestCase {
         try await waitForCaret(webView, x: 40...64, y: 40...104)
     }
 
+    /// The wheel event's location is the window point, flipped into CG's top-left
+    /// global space, so NSEvent(cgEvent:) reports it back as locationInWindow
+    /// regardless of where the window is.
+    func testScrollEventLocationIsWindowPointFlipped() {
+        XCTAssertEqual(CompanionBrowserInput.scrollEventLocation(windowPoint: NSPoint(x: 512, y: 100),
+                                                                 primaryScreenHeight: 900),
+                       CGPoint(x: 512, y: 800))
+    }
+
+    /// A scroll lands on what is under the point even when the window is away from
+    /// the screen's origin: it scrolls the box under the point, not the page.
+    @MainActor
+    func testScrollLandsUnderPointInWindowAwayFromScreenOrigin() async throws {
+        let webView = WKWebView(frame: NSRect(x: 0, y: 0, width: 400, height: 300))
+        let window = NSWindow(contentRect: NSRect(x: 300, y: 200, width: 400, height: 300),
+                              styleMask: [.titled],
+                              backing: .buffered,
+                              defer: false)
+        window.isReleasedWhenClosed = false
+        window.contentView?.addSubview(webView)
+        window.orderBack(nil)
+        defer {
+            window.close()
+        }
+        let waiter = NavigationWaiter()
+        waiter.expectation = expectation(description: "page loaded")
+        webView.navigationDelegate = waiter
+        webView.loadHTMLString(scrollBoxHTML, baseURL: URL(string: "https://example.com/"))
+        await fulfillment(of: [waiter.expectation!], timeout: 15)
+
+        // The box spans x 150-250, y 100-200 in web view points.
+        CompanionBrowserInput.scroll(webView, at: CGPoint(x: 200, y: 150), deltaX: 0, deltaY: -50)
+        try await waitFor(webView, "document.getElementById('box').scrollTop", toBe: "50")
+        let pageScroll = await evaluate(webView, "window.scrollY")
+        XCTAssertEqual(pageScroll, "0")
+    }
+
+    private let scrollBoxHTML = """
+    <html><body style='margin:0'>
+    <div id=box style='position:absolute; left:150px; top:100px; width:100px; height:100px; overflow:scroll'>
+    <div style='height:2000px'></div>
+    </div>
+    <div style='height:5000px'></div>
+    </body></html>
+    """
+
     func testInputReachesPageInWindowThatIsNotKey() async throws {
         try await exercise(inWindow: true)
     }
