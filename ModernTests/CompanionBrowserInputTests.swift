@@ -265,7 +265,8 @@ final class CompanionBrowserInputTests: XCTestCase {
     }
 
     /// A scroll lands on what is under the point even when the window is away from
-    /// the screen's origin: it scrolls the box under the point, not the page.
+    /// the bottom-left corner of the main display: it scrolls the box under the
+    /// point, not the page.
     @MainActor
     func testScrollLandsUnderPointInWindowAwayFromScreenOrigin() async throws {
         let webView = WKWebView(frame: NSRect(x: 0, y: 0, width: 400, height: 300))

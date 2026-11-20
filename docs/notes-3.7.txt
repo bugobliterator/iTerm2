@@ -41,4 +41,4 @@ Bug Fixes:
   disabled one. Fixed.
 - Scrolling a web browser session from iTerm2
   Buddy did nothing unless its window was at the
-  corner of the screen. Fixed.
+  bottom-left corner of the main display. Fixed.
