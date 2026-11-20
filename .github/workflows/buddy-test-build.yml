@@ -47,11 +47,15 @@ jobs:
             echo "rebuild_deps=true" >> "$GITHUB_OUTPUT"
           fi
           xcodebuild -version
+          ls -d /Applications/Xcode*.app
+          xcrun --show-sdk-version
 
       - name: Rebuild prebuilt dependencies for this Xcode
         if: steps.xcode.outputs.rebuild_deps == 'true'
         run: |
           brew install cmake automake autoconf libtool pkg-config || true
+          rustup toolchain install stable --profile minimal
+          rustup target add aarch64-apple-darwin --toolchain stable
           make deps
           xcodebuild -version > last-xcode-version
 
