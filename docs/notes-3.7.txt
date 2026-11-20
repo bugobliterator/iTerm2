@@ -43,3 +43,6 @@ Bug Fixes:
   tab, a minimized window, or a hidden hotkey
   window now updates smoothly instead of about
   once a second.
+- In iTerm2 Buddy, typing /, *, +, or = into a
+  program that turns on enhanced key reporting,
+  such as Claude Code, sent the wrong key. Fixed.

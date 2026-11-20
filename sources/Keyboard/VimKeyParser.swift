@@ -211,9 +211,37 @@ private extension VimKeyParser {
     }
 }
 
-fileprivate struct CarbonKeystroke {
+struct CarbonKeystroke {
     var keyCode: UInt16
     var modifiers: UInt32
+
+    /// When several keystrokes produce the same string, the reverse map keeps the
+    /// most preferred one. In order: a key off the numeric keypad beats one on it,
+    /// fewer modifiers beat more, then the lower modifier mask (Shift before Option),
+    /// then the lower key code. This is a total order, so the choice does not depend
+    /// on the order keystrokes are visited.
+    ///
+    /// Comparing modifier counts across different key codes matters: the US layout
+    /// maps Shift+Arrow to = / * + (a legacy of keyboards whose arrows shared the
+    /// keypad keys). Without it, Shift+Up Arrow could win over the plain / key and a
+    /// CSI u encoder would report “/” as Shift plus the Up Arrow's base key, which
+    /// apps do not recognize as a slash.
+    func isPreferred(over other: CarbonKeystroke) -> Bool {
+        let onKeypad = keyCodeIsOnKeypad(keyCode: keyCode)
+        let otherOnKeypad = keyCodeIsOnKeypad(keyCode: other.keyCode)
+        if onKeypad != otherOnKeypad {
+            return !onKeypad
+        }
+        let count = modifiers.nonzeroBitCount
+        let otherCount = other.modifiers.nonzeroBitCount
+        if count != otherCount {
+            return count < otherCount
+        }
+        if modifiers != other.modifiers {
+            return modifiers < other.modifiers
+        }
+        return keyCode < other.keyCode
+    }
 }
 
 // Input source (e.g., com.apple.US) -> String produced (e.g., "G") -> CarbonKeystroke that produces that key (e.g., (kVK_ANSI_G, shiftKey))
@@ -241,8 +269,6 @@ func keyCodeIsOnKeypad(keyCode: UInt16) -> Bool {
 
 extension NSEvent {
     fileprivate static func productionToCarbonKeystrokeDictionary(forInputSourceID sourceID: String) -> [String: CarbonKeystroke] {
-        let sourceID = currentInputSourceID()
-
         if let dict = cachedKeystrokeToStringMapping[sourceID] {
             return dict
         }
@@ -255,15 +281,8 @@ extension NSEvent {
             for keyCode in 0...maxKeyCode {
                 if let produced = NSEvent.stringForKey(withKeycode: keyCode, modifiers: modifier) {
                     let carbonKeystroke = CarbonKeystroke(keyCode: keyCode, modifiers: modifier)
-                    if let existing = dict[produced] {
-                        if keyCodeIsOnKeypad(keyCode: keyCode) && !keyCodeIsOnKeypad(keyCode: existing.keyCode) {
-                            // Prefer non-keypad to keypad
-                            continue
-                        }
-                        if existing.keyCode == keyCode && existing.modifiers.nonzeroBitCount <= modifier.nonzeroBitCount {
-                            // Prefer fewer modifiers
-                            continue
-                        }
+                    if let existing = dict[produced], !carbonKeystroke.isPreferred(over: existing) {
+                        continue
                     }
                     dict[produced] = carbonKeystroke
                 }
