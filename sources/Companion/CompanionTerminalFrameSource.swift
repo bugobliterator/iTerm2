@@ -82,7 +82,10 @@ final class CompanionTerminalFrameSource: CompanionLiveFrameSource {
         let height = Int(session.screen.height())
         guard height > 0 else { return nil }
         let range = NSRange(location: scrollback, length: height)
-        let background = session.processedBackgroundColor ?? .black
+        // Render undimmed: the phone shows this one session full screen, so the
+        // Mac's dimming of an inactive split pane or a background window would
+        // only make it look faded there.
+        let background = session.undimmedProcessedBackgroundColor ?? .black
 
         // Buried/peer/parked sessions detach the data source, which would make the
         // renderer see zero lines; re-attach for the render and restore after.
@@ -101,7 +104,8 @@ final class CompanionTerminalFrameSource: CompanionLiveFrameSource {
                                                backgroundColor: background,
                                                showCursor: true,
                                                includeSelection: true,
-                                               cursorFocused: true) else {
+                                               cursorFocused: true,
+                                               undimmed: true) else {
             return nil
         }
         var rect = CGRect(origin: .zero, size: image.size)

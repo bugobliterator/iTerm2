@@ -14430,6 +14430,15 @@ typedef NS_ENUM(NSUInteger, PTYSessionTmuxReport) {
     return [_screen.colorMap processedBackgroundColorForBackgroundColor:unprocessedColor];
 }
 
+- (NSColor *)undimmedProcessedBackgroundColor {
+    iTermColorMap *colorMap = [iTermColorMap undimmedCopyOf:_screen.colorMap];
+    if (!colorMap) {
+        return self.processedBackgroundColor;
+    }
+    NSColor *unprocessedColor = [colorMap colorForKey:kColorMapBackground];
+    return [colorMap processedBackgroundColorForBackgroundColor:unprocessedColor];
+}
+
 - (void)textViewPostTabContentsChangedNotification
 {
     [[NSNotificationCenter defaultCenter] postNotificationName:@"iTermTabContentsChanged"
