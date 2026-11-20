@@ -54,8 +54,15 @@ jobs:
         if: steps.xcode.outputs.rebuild_deps == 'true'
         run: |
           brew install cmake automake autoconf libtool pkg-config || true
-          rustup toolchain install stable --profile minimal
-          rustup target add aarch64-apple-darwin --toolchain stable
+          # The Makefile calls Homebrew's rustup; install the toolchain with that same rustup
+          # and point cargo at its rustc (the runner has no rustc proxy on PATH).
+          RUSTUP=/opt/homebrew/opt/rustup/bin/rustup
+          [ -x "$RUSTUP" ] || RUSTUP="$(command -v rustup)"
+          "$RUSTUP" toolchain install stable --profile minimal
+          "$RUSTUP" target add aarch64-apple-darwin --toolchain stable
+          export RUSTC="$("$RUSTUP" which rustc --toolchain stable)"
+          export PATH="$(dirname "$RUSTC"):$PATH"
+          "$RUSTC" -vV
           make deps
           xcodebuild -version > last-xcode-version
 
