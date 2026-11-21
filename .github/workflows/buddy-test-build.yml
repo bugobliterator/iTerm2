@@ -63,7 +63,8 @@ jobs:
           export RUSTC="$("$RUSTUP" which rustc --toolchain stable)"
           export PATH="$(dirname "$RUSTC"):$PATH"
           "$RUSTC" -vV
-          make deps
+          # sfsymbolenum is skipped: it needs the SF Symbols app, and its output is checked in.
+          make fatlibsixel CoreParse NMSSH bindeps libgit2 sparkle librailroad_dsl pwmadapters
           xcodebuild -version > last-xcode-version
 
       - name: Build (Development, unsigned)
